@@ -1,0 +1,188 @@
+@Library("com.optum.jenkins.pipeline.library@v0.3.0") _
+
+def PIPELINE_VERSION = "1.0" + ".${BUILD_NUMBER}"
+// Artifactory Vars
+def ARTIFACTORY_CREDID    = "ec968397-5987-4eee-b2c3-afe93022c6d8"
+def ARTIFACTORY_BASE_URL  = "https://repo1.uhc.com/artifactory"
+def ARTIFACTORY_REPO      = "UHG-Releases"
+def ARTIFACTORY_GROUPID   = "com/optum/aup"
+
+// XL Deploy Vars
+def XLD_WORKSPACE       = "AUP7"
+def XLD_APP_NAME        = "KARA"
+def XLD_APP_VERSION     = "${PIPELINE_VERSION}"
+def XLD_DEPLOYABLE_TYPE = "was.Ear"
+def XLD_DEPLOYABLE_NAME = "KARAEar"
+def XLD_DEPLOYABLE_TAGS = ["k3"]
+def XLD_DEPLOYABLE_URL  = "${ARTIFACTORY_BASE_URL}/${ARTIFACTORY_REPO}/${ARTIFACTORY_GROUPID}/kara/KARAEar/${PIPELINE_VERSION}/KARAEar-${PIPELINE_VERSION}.ear"
+def JENKINS_CRED_XLD    = "ec968397-5987-4eee-b2c3-afe93022c6d8"
+def XLD_ENV_ID          = "Environments/${XLD_WORKSPACE}/STG"
+def XLD_PKG_ID          = "Applications/${XLD_WORKSPACE}/${XLD_APP_NAME}/${PIPELINE_VERSION}"
+
+pipeline {
+  
+  agent {
+    label 'docker-maven-slave'
+  }
+  
+  parameters {
+    string(name: "ENVIRONMENT", defaultValue: "Stage", description: "Provide environmnet Type")
+  }
+  tools {
+     maven 'Maven'
+  }
+	
+  stages {
+	  
+    stage('checkout') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: '*/Stage']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '13dcbb23-6af6-426a-8915-b06cea4d6748', url: 'https://github.optum.com/AUP/KARA-MAVENIZATION.git']]])
+      }
+    }
+    
+		  
+    stage ('Artifactory configuration') {
+            steps {
+
+                rtMavenDeployer (
+                    id: "MAVEN_DEPLOYER",
+                    serverId: "-1381075113@1458159651773",
+                    releaseRepo: "UHG-Releases",
+                    snapshotRepo: "UHG-Snapshots"
+                )
+
+                rtMavenResolver (
+                    id: "MAVEN_RESOLVER",
+                    serverId: "-1381075113@1458159651773",
+                    releaseRepo: "repo",
+                    snapshotRepo: "repo"
+                )
+            }
+        }
+
+       stage ('Exec Maven') {
+            steps {
+                rtMavenRun (
+                    tool: 'MAVEN_SETUP', // Tool name from Jenkins configuration
+                    pom: 'pom.xml',
+                    goals: 'clean install -Dv=${BUILD_NUMBER}',
+                    deployerId: "MAVEN_DEPLOYER",
+                    resolverId: "MAVEN_RESOLVER"
+                )
+            }
+        }
+	
+	stage ('Sonar scan') {
+            steps {
+                rtMavenRun (
+                    tool: 'MAVEN_SETUP', // Tool name from Jenkins configuration
+                    pom: 'pom.xml',
+                    goals: 'sonar:sonar -Dv=${BUILD_NUMBER}',
+                    deployerId: "MAVEN_DEPLOYER",
+                    resolverId: "MAVEN_RESOLVER"
+                )
+            }
+        }
+	
+	  stage('Fortify') {
+      		steps {
+        		glFortifyScan fortifyBuildName:"KARA",
+                      		      scarCredentialsId:"f592b843-0378-4043-b70f-79f0e7b98d1e",
+                      		      scarProjectVersion:"13289",
+                      		      uploadToScar:"true",
+		      		      fortifyJdkVersion:"1.8",
+                      		      fortifyMaxSizeMemory:"-Xmx8G",
+                      		      fortifyClassPath:"$WORKSPACE/tomcat",
+                      		      source:"$WORKSPACE",
+				      criticalThreshold: 100,
+                      		      lowThreshold: 3000,
+				      highThreshold: 5000,
+				      mediumThreshold: 5000,
+		                      invalidateTokens:"true"
+      			}
+    		}
+	
+	  stage ('Publish build info to JFrog') {
+            steps {
+                rtPublishBuildInfo (
+                    serverId: "-1381075113@1458159651773"
+                )
+            }
+        }
+	
+	  
+	stage('SSH Deploy Batch Jars the server') {
+    		steps {
+			script{
+            			def remote = [:]
+            			remote.name = 'apsrd5996'
+            			remote.host = 'apsrd5996'
+            			remote.user = 'aupapp'
+            			remote.password = 'Unx20aup'
+            			remote.allowAnyHosts = true
+			 	writeFile file: '/home/jenkins/workspace/KARA/KARABatchApp/target/jars/lib/KARA*.jar', text: 'ls -lrt'
+            			sshPut remote: remote, from: '/home/jenkins/workspace/KARA/KARABatchApp/target/jars/lib/KARA*.jar', into: '/home/aupapp/kara_batch/lib/'
+			}
+			script{
+            			def remote = [:]
+            			remote.name = 'apsrd5996'
+            			remote.host = 'apsrd5996'
+            			remote.user = 'aupapp'
+            			remote.password = 'Unx20aup'
+            			remote.allowAnyHosts = true
+			 	writeFile file: '/home/jenkins/workspace/KARA/KARABatchApp/target/jars/lib/HibernateBase*.jar', text: 'ls -lrt'
+            			sshPut remote: remote, from: '/home/jenkins/workspace/KARA/KARABatchApp/target/jars/lib/HibernateBase*.jar', into: '/home/aupapp/kara_batch/lib/'
+			}
+    		}
+	}
+	
+	stage('XLDeploy_ImportPackage') {
+      		steps {
+        		script {
+        			echo "Step 1.  Create XL Deploy package manifest XML"
+				String manifestXML = glXLDeployGenerateManifestXML('xldWorkspace':XLD_WORKSPACE,'xldAppName':XLD_APP_NAME,'xldAppVersion':XLD_APP_VERSION)
+				echo "Step 2.  Add deployable to manifest XML. Repeat this for each deployable"
+				manifestXML = glXLDeployAddDeployable('xldManifestXML':manifestXML,'xldType':XLD_DEPLOYABLE_TYPE,'xldName':XLD_DEPLOYABLE_NAME,'fileUri':XLD_DEPLOYABLE_URL, 'tags':XLD_DEPLOYABLE_TAGS)
+				echo "Step 3.  Now import package to XL Deploy"
+				glXLDeployPackageImport('xldManifestXML':manifestXML, 'xldServerLabel':"Production", 'xldCredentialID':"${JENKINS_CRED_XLD}")
+        			}
+      			}
+    }
+    	stage('XLDeploy_Deploy') {
+      			steps {
+        		script {
+        			glXLDeployPackageDeploy 'xldServerLabel':"Production", 'xldEnvironmentID':"${XLD_ENV_ID}", 'xldPackageID':"${XLD_PKG_ID}", 'xldCredentialID':"${JENKINS_CRED_XLD}"
+        			}
+      			}
+    	}
+	  
+}
+	
+post
+    {
+    always
+    {
+      echo 'This will always run'
+      emailext body: "Check console output at Build URL to view the results: ${BUILD_URL}",
+      subject: "Jenkins Build $currentBuild.currentResult-$JOB_NAME",
+      to: 'AUP_OM_DL@ds.uhc.com'
+    }
+    success
+    {
+      echo 'This will run only if successful'
+    }
+    failure
+    {
+      echo 'This will run only if failed'
+    }
+    unstable
+    {
+      echo 'This will run only if the run was marked as unstable'
+    }
+    changed
+    {
+      echo 'This will run only if the state of the Pipeline has changed'
+    }
+	
+	}
+}

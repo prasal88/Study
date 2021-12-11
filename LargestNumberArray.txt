@@ -1,0 +1,26 @@
+package com.test.string.StringExamplePrograms;
+
+public class LargestNumberArray {
+
+	static void findHighestNumber(){
+		int A[] = {23,13,50,45,100,1,30,35,5};
+		int max=A[0];
+		
+		for(int i=1;i<A.length;i++) {
+			if(A[i]>max) {
+				max=A[i];
+			}
+		}		
+		System.out.println(max);
+	}
+	
+		
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		findHighestNumber();
+		
+	}
+
+}
+
+

@@ -1,0 +1,24 @@
+package com.test.string.StringExamplePrograms;
+
+public class SumPairFromArray {
+	
+	static void findPairSum(int A[], int sum){
+		
+		for(int i=0;i<A.length;i++) {
+			for(int j=i+1; j<A.length;j++) {
+				if(A[i] + A[j]==sum) {
+					System.out.println(A[i]+","+A[j]);
+				}
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		int A[] = {2,8,4,6,3,7,1,2,3,8,9,1};
+		int sum = 8;
+		findPairSum(A, sum);
+
+	}
+
+}

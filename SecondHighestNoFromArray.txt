@@ -1,0 +1,26 @@
+package com.test.string.StringExamplePrograms;
+
+public class SecondHighestNoFromArray {
+
+	static void secondHighestNo(int arr1[]) {
+	int firstHighest= Integer.MIN_VALUE;
+	int secondHihest= Integer.MIN_VALUE;
+	
+	for(int i=0;i<arr1.length;i++) {
+		if(arr1[i]>firstHighest) {
+			secondHihest = firstHighest;
+			firstHighest=arr1[i];
+		}else if(secondHihest<arr1[i] && arr1[i]!=firstHighest) {
+			secondHihest=arr1[i];
+		}
+	}
+	System.out.println(secondHihest);
+	}
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		int arr[] = {24,86,35,46,98,23};
+		secondHighestNo(arr);
+	}
+
+}

@@ -1,0 +1,60 @@
+package com.test.string.StringExamplePrograms;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+
+public class StringAlphabetCountHashmap {
+
+	static void findDuplicateWord(String str) {
+		String st[] = str.split(" ");
+		
+		HashMap<String , Integer> hm = new LinkedHashMap<String, Integer>();
+		
+		for(String tempString:st) {
+			if(hm.get(tempString)!=null) {
+				hm.put(tempString, hm.get(tempString)+1);
+			}else {
+			hm.put(tempString, 1);
+			}
+		}
+		Iterator<String> temp = hm.keySet().iterator();
+		while(temp.hasNext()) {
+			String s = temp.next();
+			if(hm.get(s)>1) {
+				System.out.println(s+hm.get(s));
+			}
+		}
+		
+	}
+	
+	static void findCharDuplicate(String str) {
+		char ch[] = str.toCharArray();
+		HashMap<Character, Integer> hc = new LinkedHashMap<Character, Integer>();
+		for(char c:ch) {
+			if(hc.get(c)!=null) {
+				hc.put(c, hc.get(c)+1);
+			}else {
+				hc.put(c, 1);	
+			}
+		}
+		
+		Iterator<Character> ca =hc.keySet().iterator();
+		while(ca.hasNext()) {
+			char cae = ca.next();
+			if(hc.get(cae)>1) {
+				System.out.print(cae+""+hc.get(cae));
+			}
+		}
+		
+		//System.out.println(hc);
+		
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+				
+		findDuplicateWord("I am am learning java java");
+		findCharDuplicate("yashwanthkumarnt");
+	}
+}

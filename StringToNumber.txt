@@ -1,0 +1,21 @@
+package com.test.string.StringExamplePrograms;
+
+public class StringToNumber {
+
+	static int convert_String_To_Number(String numStr) {
+	    char ch[] = numStr.toCharArray();
+	    int num = 0;
+	    for(int i=0;i<numStr.length();i++) {
+	        num = num * 10 + ((int)numStr.charAt(i) - 48); 
+	    }
+	    System.out.println(num);
+	    return num;
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		convert_String_To_Number("50");
+	}
+
+}
+

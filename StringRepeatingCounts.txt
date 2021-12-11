@@ -1,0 +1,31 @@
+package com.test.string.StringExamplePrograms;
+
+public class StringRepeatingCounts {
+
+	static void stringCountRepeats(String s) {
+		int count =1;
+		int x;
+		for(x=0; x<s.length()-1;x++) {
+			if(s.charAt(x)!=s.charAt(x+1) && count ==1) {
+				System.out.print(s.charAt(x)+""+count);
+				//System.out.println(count);
+			}else if(s.charAt(x)==s.charAt(x+1)) {
+				count ++;
+			}
+			else if(s.charAt(x)!=s.charAt(x+1) && count >1) {
+				System.out.print(s.charAt(x)+""+count);
+				//System.out.println(count);
+				count=1;
+			}
+		}
+		System.out.print(s.charAt(x)+""+count);
+		//System.out.println(count);
+	
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		stringCountRepeats("aabbccaaabbbcd");
+	}
+
+}

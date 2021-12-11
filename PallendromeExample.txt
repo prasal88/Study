@@ -1,0 +1,26 @@
+package com.test.string.StringExamplePrograms;
+
+public class PallendromeExample {
+
+	static boolean isPallendrome(String str) {
+		char ch[]=str.toCharArray();
+		for(int i=0;i<str.length();i++) {
+			if(ch[i] != ch[(str.length()-1)-i]) {
+				return false;			
+		}
+			
+		}	
+		return true;
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		if(isPallendrome("madam")) {
+			System.out.println("pallendrome");
+		}else {
+			System.out.println("not a pallendrome");
+		}
+
+	}
+
+}
